@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Database } from '../lib/database.types';
 import { supabase } from '../lib/supabase';
@@ -12,24 +12,37 @@ interface Props {
 }
 
 export default function JokeCard({ joke, onPress }: Props) {
-  const [rating, setRating] = useState(joke.rating);
+  const [localRating, setLocalRating] = useState(joke.rating);
   const [isUpdating, setIsUpdating] = useState(false);
 
   const handleRating = async (value: number) => {
     if (isUpdating) return;
     
+    const previousRating = localRating;
+    const newRating = localRating + value;
+    
+    // אופטימיסטי UI - עדכון מיידי
+    setLocalRating(newRating);
+    setIsUpdating(true);
+    
     try {
-      setIsUpdating(true);
-      const newRating = rating + value;
-      const { error } = await supabase
+      const { error, data } = await supabase
         .from('jokes')
         .update({ rating: newRating })
-        .eq('id', joke.id);
+        .eq('id', joke.id)
+        .select()
+        .single();
 
       if (error) throw error;
       
-      setRating(newRating);
+      // וידוא שהדאטה מסונכרנת
+      if (data.rating !== newRating) {
+        setLocalRating(data.rating);
+      }
     } catch (error) {
+      // שחזור המצב הקודם במקרה של שגיאה
+      setLocalRating(previousRating);
+      Alert.alert('שגיאה', 'לא הצלחנו לעדכן את הדירוג, נסה שוב מאוחר יותר');
       console.error('Error updating rating:', error);
     } finally {
       setIsUpdating(false);
@@ -39,7 +52,7 @@ export default function JokeCard({ joke, onPress }: Props) {
   return (
     <TouchableOpacity 
       style={styles.card} 
-      onPress={() => onPress({ ...joke, rating })}
+      onPress={() => onPress({ ...joke, rating: localRating })}
     >
       <View style={styles.content}>
         <Text style={styles.title} numberOfLines={2}>{joke.original}</Text>
@@ -48,25 +61,25 @@ export default function JokeCard({ joke, onPress }: Props) {
           <View style={styles.ratingContainer}>
             <TouchableOpacity 
               onPress={() => handleRating(1)}
-              style={[styles.ratingButton, isUpdating && styles.disabled]}
+              style={styles.ratingButton}
               disabled={isUpdating}
             >
               <MaterialCommunityIcons 
                 name="thumb-up" 
                 size={20} 
-                color={isUpdating ? '#ccc' : '#4c669f'} 
+                color="#4c669f"
               />
             </TouchableOpacity>
-            <Text style={styles.rating}>{rating}</Text>
+            <Text style={styles.rating}>{localRating}</Text>
             <TouchableOpacity 
               onPress={() => handleRating(-1)}
-              style={[styles.ratingButton, isUpdating && styles.disabled]}
+              style={styles.ratingButton}
               disabled={isUpdating}
             >
               <MaterialCommunityIcons 
                 name="thumb-down" 
                 size={20} 
-                color={isUpdating ? '#ccc' : '#666'} 
+                color="#666"
               />
             </TouchableOpacity>
           </View>
