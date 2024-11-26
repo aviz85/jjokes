@@ -7,6 +7,7 @@ import HomeScreen from './src/screens/HomeScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
 import JokeDetailScreen from './src/screens/JokeDetailScreen';
+import TrashScreen from './src/screens/TrashScreen';
 
 const Stack = createStackNavigator();
 const Tab = createMaterialTopTabNavigator();
@@ -48,6 +49,16 @@ function TabNavigator() {
           tabBarLabel: 'הגדרות',
           tabBarIcon: ({ color }) => (
             <MaterialCommunityIcons name="cog" color={color} size={24} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Trash"
+        component={TrashScreen}
+        options={{
+          tabBarLabel: 'פח',
+          tabBarIcon: ({ color }) => (
+            <MaterialCommunityIcons name="delete" color={color} size={24} />
           ),
         }}
       />

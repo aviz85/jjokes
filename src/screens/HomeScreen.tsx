@@ -1,27 +1,30 @@
 import { useState, useEffect } from 'react';
-import { View, FlatList, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, FlatList, ActivityIndicator, StyleSheet, TouchableOpacity, Text } from 'react-native';
 import { supabase } from '../lib/supabase';
 import JokeCard from '../components/JokeCard';
 import { Database } from '../lib/database.types';
 
 type Joke = Database['public']['Tables']['jokes']['Row'];
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 20;
 
 export default function HomeScreen({ navigation }: any) {
   const [jokes, setJokes] = useState<Joke[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   const fetchJokes = async (pageNumber: number) => {
     try {
+      setLoadingMore(true);
       const from = pageNumber * PAGE_SIZE;
       const to = from + PAGE_SIZE - 1;
 
       const { data, error, count } = await supabase
         .from('jokes')
         .select('*', { count: 'exact' })
+        .eq('is_deleted', false)
         .range(from, to)
         .order('created_at', { ascending: false });
 
@@ -39,6 +42,7 @@ export default function HomeScreen({ navigation }: any) {
       console.error('Error fetching jokes:', error);
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
   };
 
@@ -46,8 +50,18 @@ export default function HomeScreen({ navigation }: any) {
     fetchJokes(0);
   }, []);
 
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      console.log('HomeScreen focused - refreshing data');
+      setPage(0);
+      fetchJokes(0);
+    });
+
+    return unsubscribe;
+  }, [navigation]);
+
   const handleLoadMore = () => {
-    if (!loading && hasMore) {
+    if (!loadingMore && hasMore) {
       setPage(prev => prev + 1);
       fetchJokes(page + 1);
     }
@@ -55,6 +69,14 @@ export default function HomeScreen({ navigation }: any) {
 
   const handleJokePress = (joke: Joke) => {
     navigation.navigate('JokeDetail', { joke });
+  };
+
+  const handleDelete = (jokeId: number) => {
+    console.log('HomeScreen: handleDelete called with jokeId:', jokeId);
+    setJokes(prev => {
+      console.log('HomeScreen: Removing joke from list');
+      return prev.filter(joke => joke.id !== jokeId);
+    });
   };
 
   if (loading && page === 0) {
@@ -69,14 +91,31 @@ export default function HomeScreen({ navigation }: any) {
     <View style={styles.container}>
       <FlatList
         data={jokes}
-        renderItem={({ item }) => (
-          <JokeCard joke={item} onPress={handleJokePress} />
-        )}
+        renderItem={({ item }) => {
+          console.log('Rendering joke card:', item.id);
+          return (
+            <JokeCard 
+              joke={item} 
+              onPress={handleJokePress}
+              onDelete={handleDelete}
+            />
+          );
+        }}
         keyExtractor={item => item.id.toString()}
-        onEndReached={handleLoadMore}
-        onEndReachedThreshold={0.5}
         ListFooterComponent={
-          loading ? <ActivityIndicator size="small" color="#4c669f" /> : null
+          hasMore ? (
+            <TouchableOpacity 
+              style={styles.loadMoreButton}
+              onPress={handleLoadMore}
+              disabled={loadingMore}
+            >
+              {loadingMore ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Text style={styles.loadMoreText}>טען עוד</Text>
+              )}
+            </TouchableOpacity>
+          ) : null
         }
       />
     </View>
@@ -92,5 +131,18 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  loadMoreButton: {
+    backgroundColor: '#4c669f',
+    padding: 12,
+    borderRadius: 8,
+    margin: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadMoreText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 }); 
