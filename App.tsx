@@ -1,7 +1,7 @@
 import 'react-native-gesture-handler';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
-import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import HomeScreen from './src/screens/HomeScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
@@ -9,8 +9,13 @@ import SettingsScreen from './src/screens/SettingsScreen';
 import JokeDetailScreen from './src/screens/JokeDetailScreen';
 import TrashScreen from './src/screens/TrashScreen';
 
+type TabIconProps = {
+  color: string;
+  size: number;
+};
+
 const Stack = createStackNavigator();
-const Tab = createMaterialTopTabNavigator();
+const Tab = createBottomTabNavigator();
 
 function TabNavigator() {
   return (
@@ -18,8 +23,14 @@ function TabNavigator() {
       screenOptions={{
         tabBarActiveTintColor: '#4c669f',
         tabBarInactiveTintColor: 'gray',
-        tabBarShowIcon: true,
-        tabBarStyle: { paddingTop: 30 }
+        headerShown: false,
+        tabBarStyle: {
+          paddingBottom: 5,
+          height: 60,
+        },
+        tabBarLabelStyle: {
+          paddingBottom: 5,
+        },
       }}
     >
       <Tab.Screen
@@ -27,8 +38,8 @@ function TabNavigator() {
         component={HomeScreen}
         options={{
           tabBarLabel: 'בית',
-          tabBarIcon: ({ color }) => (
-            <MaterialCommunityIcons name="home" color={color} size={24} />
+          tabBarIcon: ({ color, size }: TabIconProps) => (
+            <MaterialCommunityIcons name="home" color={color} size={size} />
           ),
         }}
       />
@@ -37,8 +48,8 @@ function TabNavigator() {
         component={ProfileScreen}
         options={{
           tabBarLabel: 'פרופיל',
-          tabBarIcon: ({ color }) => (
-            <MaterialCommunityIcons name="account" color={color} size={24} />
+          tabBarIcon: ({ color, size }: TabIconProps) => (
+            <MaterialCommunityIcons name="account" color={color} size={size} />
           ),
         }}
       />
@@ -47,8 +58,8 @@ function TabNavigator() {
         component={SettingsScreen}
         options={{
           tabBarLabel: 'הגדרות',
-          tabBarIcon: ({ color }) => (
-            <MaterialCommunityIcons name="cog" color={color} size={24} />
+          tabBarIcon: ({ color, size }: TabIconProps) => (
+            <MaterialCommunityIcons name="cog" color={color} size={size} />
           ),
         }}
       />
@@ -57,8 +68,8 @@ function TabNavigator() {
         component={TrashScreen}
         options={{
           tabBarLabel: 'פח',
-          tabBarIcon: ({ color }) => (
-            <MaterialCommunityIcons name="delete" color={color} size={24} />
+          tabBarIcon: ({ color, size }: TabIconProps) => (
+            <MaterialCommunityIcons name="delete" color={color} size={size} />
           ),
         }}
       />
