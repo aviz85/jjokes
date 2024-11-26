@@ -2,6 +2,7 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Database } from '../lib/database.types';
 import { supabase } from '../lib/supabase';
+import { useState } from 'react';
 
 type Joke = Database['public']['Tables']['jokes']['Row'];
 
@@ -11,24 +12,34 @@ interface Props {
 }
 
 export default function JokeCard({ joke, onPress }: Props) {
+  const [rating, setRating] = useState(joke.rating);
+  const [isUpdating, setIsUpdating] = useState(false);
+
   const handleRating = async (value: number) => {
+    if (isUpdating) return;
+    
     try {
-      const newRating = joke.rating + value;
+      setIsUpdating(true);
+      const newRating = rating + value;
       const { error } = await supabase
         .from('jokes')
         .update({ rating: newRating })
         .eq('id', joke.id);
 
       if (error) throw error;
+      
+      setRating(newRating);
     } catch (error) {
       console.error('Error updating rating:', error);
+    } finally {
+      setIsUpdating(false);
     }
   };
 
   return (
     <TouchableOpacity 
       style={styles.card} 
-      onPress={() => onPress(joke)}
+      onPress={() => onPress({ ...joke, rating })}
     >
       <View style={styles.content}>
         <Text style={styles.title} numberOfLines={2}>{joke.original}</Text>
@@ -37,16 +48,29 @@ export default function JokeCard({ joke, onPress }: Props) {
           <View style={styles.ratingContainer}>
             <TouchableOpacity 
               onPress={() => handleRating(1)}
-              style={styles.ratingButton}
+              style={[styles.ratingButton, isUpdating && styles.disabled]}
+              disabled={isUpdating}
             >
-              <MaterialCommunityIcons name="thumb-up" size={20} color="#4c669f" />
+              <MaterialCommunityIcons 
+                name="thumb-up" 
+                size={20} 
+                color={isUpdating ? '#ccc' : '#4c669f'} 
+              />
             </TouchableOpacity>
-            <Text style={styles.rating}>{joke.rating}</Text>
+            <Text style={styles.rating}>{rating}</Text>
             <TouchableOpacity 
-      <Text style={styles.title} numberOfLines={2}>{joke.original}</Text>
-      <View style={styles.footer}>
-        <Text style={styles.rating}>דירוג: {joke.rating}</Text>
-        <Text style={styles.tags}>{joke.tags}</Text>
+              onPress={() => handleRating(-1)}
+              style={[styles.ratingButton, isUpdating && styles.disabled]}
+              disabled={isUpdating}
+            >
+              <MaterialCommunityIcons 
+                name="thumb-down" 
+                size={20} 
+                color={isUpdating ? '#ccc' : '#666'} 
+              />
+            </TouchableOpacity>
+          </View>
+        </View>
       </View>
     </TouchableOpacity>
   );
@@ -65,20 +89,36 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
   },
+  content: {
+    flex: 1,
+  },
   title: {
     fontSize: 16,
     fontWeight: '600',
+    marginBottom: 10,
   },
   footer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 10,
+    alignItems: 'center',
+  },
+  ratingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  ratingButton: {
+    padding: 5,
   },
   rating: {
-    color: '#666',
+    color: '#4c669f',
+    fontWeight: '600',
+    marginHorizontal: 8,
   },
   tags: {
     color: '#666',
     fontSize: 12,
+  },
+  disabled: {
+    opacity: 0.5,
   },
 }); 
